@@ -16,9 +16,8 @@ requirements = map(str.strip, open('requirements.txt').readlines())
 setup(
     name='py_eventsocket',
     version='0.1.0',
-    author_email="""
-        "Aaron Westendorf" <aaron@agoragames.com>,
-    """,
+    author="Aaron Westendorf",
+    author_email="aaron@agoragames.com",
     packages = find_packages() ,
     py_modules = ['eventsocket'],
     install_requires = requirements,
