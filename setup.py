@@ -1,4 +1,3 @@
-import eventsocket
 import os
 
 try:
@@ -15,12 +14,13 @@ except ImportError:
 requirements = map(str.strip, open('requirements.txt').readlines())
 
 setup(
-    name='Haigha',
-    version=eventsocket.VERSION,
+    name='py_eventsocket',
+    version='0.1.0',
     author_email="""
         "Aaron Westendorf" <aaron@agoragames.com>,
     """,
-    packages = find_packages(),
+    packages = find_packages() ,
+    py_modules = ['eventsocket'],
     install_requires = requirements,
     license="MIT License",
     long_description=open('README.txt').read(),

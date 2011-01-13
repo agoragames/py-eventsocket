@@ -9,8 +9,6 @@ import logging
 import errno
 import traceback
 
-VERSION = '0.1.0'
-
 # TODO: Use new io objects from 2.6
 # 26 July 10 - I looked into this and a potential problem with io.StringIO is
 # that it assumes all text is unicode.  Without a full test and probably lots
