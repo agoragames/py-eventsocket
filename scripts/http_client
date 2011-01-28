@@ -1,0 +1,55 @@
+#!/usr/bin/env python
+
+import signal
+import time
+from eventsocket import EventSocket, event
+from optparse import OptionParser
+
+
+def sigint_cb(*args):
+  event.abort()
+
+class Client(object):
+
+  def __init__(self, host):
+    self._host = host
+    self._bytes_read = 0
+    self._connect()
+
+  def _connect(self):
+    self._sock = EventSocket( read_cb=self._read, close_cb=self._closed )
+    self._sock.connect( (self._host,80) )
+    self._sock.write( 'GET / HTTP/1.0\r\n\r\n' )
+
+  def _closed(self, sock):
+    self._connect()
+
+  def _read(self, sock):
+    self._bytes_read += len( self._sock.read().read() )
+
+parser = OptionParser(
+  usage='Usage: client [options]'
+)
+parser.add_option('--host', default='localhost', type='string')
+parser.add_option('--clients', default=10, type='int')
+parser.add_option('--time', default=0, type='int')
+
+(options,args) = parser.parse_args()
+
+clients = []
+for x in xrange( options.clients ):
+  clients.append( Client(options.host) )
+
+event.signal( signal.SIGINT, sigint_cb )
+
+if options.time:
+  event.timeout( options.time, sigint_cb )
+
+print 'started', options.clients, 'to', options.host
+start = time.time()
+event.dispatch()
+end = time.time()
+
+total = sum( [client._bytes_read for client in clients] )
+
+print "read %.06f bytes/sec"%( total / (end-start) )
