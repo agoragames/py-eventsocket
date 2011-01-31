@@ -2,6 +2,12 @@
 
 import signal
 import time
+import sys
+import os
+sys.path.append( os.path.abspath('.') )
+sys.path.append( os.path.abspath('..') )
+print sys.path
+
 from eventsocket import EventSocket, event
 from optparse import OptionParser
 
@@ -19,6 +25,7 @@ class Client(object):
   def _connect(self):
     self._sock = EventSocket( read_cb=self._read, close_cb=self._closed )
     self._sock.connect( (self._host,80) )
+    self._sock.setblocking( False )
     self._sock.write( 'GET / HTTP/1.0\r\n\r\n' )
 
   def _closed(self, sock):
