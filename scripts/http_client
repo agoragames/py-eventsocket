@@ -6,7 +6,6 @@ import sys
 import os
 sys.path.append( os.path.abspath('.') )
 sys.path.append( os.path.abspath('..') )
-print sys.path
 
 from eventsocket import EventSocket, event
 from optparse import OptionParser
@@ -24,15 +23,16 @@ class Client(object):
 
   def _connect(self):
     self._sock = EventSocket( read_cb=self._read, close_cb=self._closed )
-    self._sock.connect( (self._host,80) )
     self._sock.setblocking( False )
+    self._sock.connect( (self._host,80) )
     self._sock.write( 'GET / HTTP/1.0\r\n\r\n' )
 
   def _closed(self, sock):
     self._connect()
 
   def _read(self, sock):
-    self._bytes_read += len( self._sock.read().read() )
+    #self._bytes_read += len( self._sock.read().read() )
+    self._bytes_read += len( self._sock.read() )
 
 parser = OptionParser(
   usage='Usage: client [options]'
@@ -59,4 +59,5 @@ end = time.time()
 
 total = sum( [client._bytes_read for client in clients] )
 
+print 'read %d bytes'%(total)
 print "read %.06f bytes/sec"%( total / (end-start) )
