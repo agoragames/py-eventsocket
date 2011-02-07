@@ -392,10 +392,12 @@ class EventSocket(object):
     # 7 April 09 aaron - Changed this algorithm so that we continually send
     # data from the buffer until the socket didn't accept all of it, then
     # break.  This should be a bit faster.
-    total_sent = 0
-    total_len = sum( map(len,self._write_buf) )
+    if self._debug:
+      total_sent = 0
+      total_len = sum( map(len,self._write_buf) )
+
     while len(self._write_buf)>0:
-      cur = self._write_buf[0]
+      cur = self._write_buf.popleft()
       
       # Catch all env errors since that should catch OSError, IOError and
       # socket.error.
@@ -412,15 +414,13 @@ class EventSocket(object):
         else:
           raise
 
-      total_sent += bytes_sent
+      if self._debug:
+        total_sent += bytes_sent
 
       if bytes_sent < len(cur):
         # keep the first entry and set to all remaining bytes.
-        self._write_buf[0] = cur[bytes_sent:]
+        self._write_buf.appendleft( cur[bytes_sent:] )
         break
-      else:
-        # done with this piece of data.
-        self._write_buf.popleft()
     
     if self._debug:
       self._logger.debug( "wrote %d/%d bytes to %s"%(total_sent,total_len,self._peername) )
