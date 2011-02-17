@@ -105,6 +105,13 @@ class EventSocket(object):
     self._inactive_event = None
     self.setinactivetimeout( 0 )
 
+  @property
+  def closed(self):
+    '''
+    Return whether this socket is closed.
+    '''
+    return self._closed
+
   def close(self):
     """
     Close the socket.
@@ -230,6 +237,7 @@ class EventSocket(object):
       self._write_event = event.write( self._sock, self._protected_cb, self._write_cb )
 
     elif err in (errno.EINPROGRESS,errno.EALREADY):
+      # TODO: track this event and cancel it on close()
       event.timeout(0.01, self.connect, *args)
     else:
       raise socket.error( err, os.strerror(err) )
