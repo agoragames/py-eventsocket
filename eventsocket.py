@@ -80,7 +80,6 @@ class EventSocket(object):
     self.setblocking = self._sock.setblocking  # is this correct?
     self.settimeout = self._sock.settimeout
     self.gettimeout = self._sock.gettimeout
-    self.setsockopt = self._sock.setsockopt
 
     self._max_read_buffer = max_read_buffer
     #self._write_buf = []
@@ -103,7 +102,7 @@ class EventSocket(object):
     self._closed = False
 
     self._inactive_event = None
-    self.setinactivetimeout( 0 )
+    self.set_inactive_timeout( 0 )
 
   @property
   def closed(self):
@@ -181,7 +180,7 @@ class EventSocket(object):
     """
     No-op as we no longer perform blocking accept calls.
     """
-    return None
+    pass
 
   def _set_read_cb(self, cb):
     """
@@ -206,7 +205,7 @@ class EventSocket(object):
     Bind the socket.
     """
     if self._debug:
-      self._logger.debug("binding to %s"%(args))
+      self._logger.debug( "binding to %s", str(args) )
 
     self._sock.bind( *args )
     self._peername = "%s:%d"%self.getsockname()
@@ -242,7 +241,7 @@ class EventSocket(object):
     else:
       raise socket.error( err, os.strerror(err) )
 
-  def setinactivetimeout(self, t):
+  def set_inactive_timeout(self, t):
     """
     Set the inactivity timeout.  If is None or 0, there is no activity timeout.
     If t>0 then socket will automatically close if there has been no activity
