@@ -202,3 +202,226 @@ class EventSocketTest(mox.MoxTestBase):
     sock.set_inactive_timeout(0)
     self.assertEquals( None, sock._inactive_event )
     self.assertEquals( 0, sock._inactive_timeout )
+
+  def test_set_inactive_timeout_when_turning_off(self):
+    sock = EventSocket()
+    sock._inactive_event = self.create_mock_anything()
+    
+    sock._inactive_event.delete()
+    eventsocket.event.timeout( 32, sock._inactive_cb ).AndReturn( 'new_timeout' )
+    self.replay_all()
+
+    sock.set_inactive_timeout(32)
+    self.assertEquals( 'new_timeout', sock._inactive_event )
+    self.assertEquals( 32, sock._inactive_timeout )
+
+  def test_set_inactive_timeout_on_stupid_input(self):
+    sock = EventSocket()
+    self.assertRaises( TypeError, sock.set_inactive_timeout, 'blah' )
+
+  def test_handle_error_with_handler_and_err_msg(self):
+    sock = EventSocket()
+    sock._parent_error_cb = self.create_mock_anything()
+    sock._error_msg = 'isanerror'
+
+    sock._parent_error_cb( sock, 'isanerror', 'exception' )
+
+    self.replay_all()
+    sock._handle_error( 'exception' )
+
+  def test_handle_error_with_handler_and_no_err_msg(self):
+    sock = EventSocket()
+    sock._parent_error_cb = self.create_mock_anything()
+
+    sock._parent_error_cb( sock, 'unknown error', 'exception' )
+
+    self.replay_all()
+    sock._handle_error( 'exception' )
+
+  def test_handle_error_no_handler_and_logger_and_err_msg(self):
+    sock = EventSocket()
+    sock._logger = self.create_mock_anything()
+    sock._error_msg = 'isanerror'
+
+    sock._logger.error( 'unhandled error isanerror', exc_info=True )
+
+    self.replay_all()
+    sock._handle_error( 'exception' )
+
+  def test_handle_error_no_handler_and_logger_and_no_err_msg(self):
+    sock = EventSocket()
+    sock._logger = self.create_mock_anything()
+
+    sock._logger.error( 'unhandled unknown error', exc_info=True )
+
+    self.replay_all()
+    sock._handle_error( 'exception' )
+
+  def test_handle_error_no_handler_and_no_logger(self):
+    sock = EventSocket()
+    self.mock( eventsocket, 'traceback' )
+
+    eventsocket.traceback.print_exc()
+
+    self.replay_all()
+    sock._handle_error( 'exception' )
+
+  def test_protected_cb_when_no_error(self):
+    sock = EventSocket()
+    cb = self.create_mock_anything()
+
+    cb( 'arg1', 'arg2', arg3='foo' ).AndReturn( 'result' )
+
+    self.replay_all()
+
+    self.assertEquals( 'result', 
+      sock._protected_cb( cb, 'arg1', 'arg2', arg3='foo' ) )
+
+  def test_protected_cb_when_an_error(self):
+    sock = EventSocket()
+    self.mock( sock, '_handle_error' )
+    cb = self.create_mock_anything()
+    sock._error_msg = 'it broked'
+
+    exc = RuntimeError('fale')
+    cb( 'arg1', 'arg2', arg3='foo' ).AndRaise( exc )
+    sock._handle_error( exc )
+
+    self.replay_all()
+
+    self.assertEquals( None,
+      sock._protected_cb( cb, 'arg1', 'arg2', arg3='foo' ) )
+    self.assertEquals( None, sock._error_msg )
+
+  def test_accept_cb_when_no_logger_and_no_parent_cb(self):
+    sock = EventSocket()
+    sock._sock = self.create_mock_anything()
+    sock._parent_read_cb = 'p_read_cb'
+    sock._parent_error_cb = 'p_error_cb'
+    sock._parent_close_cb = 'p_close_cb'
+    sock._debug = False
+    sock._logger = None
+    sock._max_read_buffer = 42
+    self.mock( EventSocket, '__init__' )
+
+    sock._sock.accept().AndReturn( ('connection', 'address') )
+    EventSocket.__init__( read_cb='p_read_cb', error_cb='p_error_cb',
+      close_cb='p_close_cb', sock='connection', debug=False,
+      logger=None, max_read_buffer=42 )
+
+    self.replay_all()
+    self.assertTrue( sock._accept_cb() )
+    self.assertEquals( 'error accepting new socket', sock._error_msg )
+
+  def test_accept_cb_when_logger_and_parent_cb(self):
+    sock = EventSocket()
+    sock._sock = self.create_mock_anything()
+    sock._parent_accept_cb = 'p_accept_cb'
+    sock._parent_read_cb = 'p_read_cb'
+    sock._parent_error_cb = 'p_error_cb'
+    sock._parent_close_cb = 'p_close_cb'
+    sock._debug = True
+    sock._logger = self.create_mock_anything()
+    sock._max_read_buffer = 42
+    self.mock( EventSocket, '__init__' )
+    self.mock( sock, '_protected_cb' )
+
+    sock._sock.accept().AndReturn( ('connection', 'address') )
+    sock._logger.debug( "accepted connection from address" )
+    EventSocket.__init__( read_cb='p_read_cb', error_cb='p_error_cb',
+      close_cb='p_close_cb', sock='connection', debug=True,
+      logger=sock._logger, max_read_buffer=42 )
+    sock._protected_cb( 'p_accept_cb', mox.IsA(EventSocket) )
+
+    self.replay_all()
+    self.assertTrue( sock._accept_cb() )
+
+  #def test_read_cb_when_no_logging_and_data_pending_and_parent_read_cb(self):
+  def test_read_cb_simplest_case(self):
+    sock = EventSocket()
+    sock._sock = self.create_mock_anything()
+    self.mock( sock, 'getsockopt' )
+    self.mock( sock, '_flag_activity' )
+    
+    sock.getsockopt( socket.SOL_SOCKET, socket.SO_RCVBUF ).AndReturn( 42 )
+    sock._sock.recv( 42 ).AndReturn( 'sumdata' )
+    sock._flag_activity()
+    
+    self.replay_all()
+    self.assertTrue( sock._read_cb() )
+    self.assertEquals( bytearray('sumdata'), sock._read_buf )
+    self.assertEquals( 'error reading from socket', sock._error_msg )
+
+  def test_read_cb_when_debugging_and_parent_cb_and_no_pending_event(self):
+    sock = EventSocket()
+    sock._sock = self.create_mock_anything()
+    sock._logger = self.create_mock_anything()
+    sock._peername = 'peername'
+    sock._debug = True
+    sock._parent_read_cb = 'p_read_cb'
+    self.mock( sock, 'getsockopt' )
+    self.mock( sock, '_flag_activity' )
+    
+    sock.getsockopt( socket.SOL_SOCKET, socket.SO_RCVBUF ).AndReturn( 42 )
+    sock._sock.recv( 42 ).AndReturn( 'sumdata' )
+    sock._logger.debug( 'read 7 bytes from peername' )
+    sock._flag_activity()
+    eventsocket.event.timeout( 0, sock._protected_cb, sock._parent_read_timer_cb ).AndReturn('pending_read')
+    
+    self.replay_all()
+    self.assertTrue( sock._read_cb() )
+    self.assertEquals( bytearray('sumdata'), sock._read_buf )
+    self.assertEquals( 'pending_read', sock._pending_read_cb_event )
+  
+  def test_read_cb_when_parent_cb_and_is_a_pending_event_and_already_buffered_data(self):
+    sock = EventSocket()
+    sock._read_buf = bytearray('foo')
+    sock._sock = self.create_mock_anything()
+    sock._peername = 'peername'
+    sock._parent_read_cb = 'p_read_cb'
+    sock._pending_read_cb_event = 'pending_read'
+    self.mock( sock, 'getsockopt' )
+    self.mock( sock, '_flag_activity' )
+    
+    sock.getsockopt( socket.SOL_SOCKET, socket.SO_RCVBUF ).AndReturn( 42 )
+    sock._sock.recv( 42 ).AndReturn( 'sumdata' )
+    sock._flag_activity()
+    
+    self.replay_all()
+    self.assertTrue( sock._read_cb() )
+    self.assertEquals( bytearray('foosumdata'), sock._read_buf )
+
+  def test_read_cb_when_buffer_overflow(self):
+    sock = EventSocket()
+    sock._sock = self.create_mock_anything()
+    sock._logger = self.create_mock_anything()
+    sock._peername = 'peername'
+    sock._debug = True
+    sock._max_read_buffer = 5
+    self.mock( sock, 'getsockopt' )
+    self.mock( sock, '_flag_activity' )
+    self.mock( sock, 'close' )
+    
+    sock.getsockopt( socket.SOL_SOCKET, socket.SO_RCVBUF ).AndReturn( 42 )
+    sock._sock.recv( 42 ).AndReturn( 'sumdata' )
+    sock._logger.debug( 'read 7 bytes from peername' )
+    sock._flag_activity()
+    sock._logger.debug( 'buffer for peername overflowed!' )
+    sock.close()
+    
+    self.replay_all()
+    self.assertEquals( None, sock._read_cb() )
+    self.assertEquals( bytearray(), sock._read_buf )
+
+  def test_read_cb_when_no_data(self):
+    sock = EventSocket()
+    sock._sock = self.create_mock_anything()
+    self.mock( sock, 'getsockopt' )
+    self.mock( sock, 'close' )
+    
+    sock.getsockopt( socket.SOL_SOCKET, socket.SO_RCVBUF ).AndReturn( 42 )
+    sock._sock.recv( 42 ).AndReturn( '' )
+    sock.close()
+    
+    self.replay_all()
+    self.assertEquals( None, sock._read_cb() )

@@ -355,8 +355,6 @@ class EventSocket(object):
           self._logger.debug( "buffer for %s overflowed!"%(self._peername) )
 
         # Clear the input buffer so that the callback flush code isn't called in close
-        #self._read_buf.reset()
-        #self._read_buf.truncate()
         self._read_buf = bytearray()
         self.close()
         return None
