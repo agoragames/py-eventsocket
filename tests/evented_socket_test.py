@@ -425,3 +425,61 @@ class EventSocketTest(mox.MoxTestBase):
     
     self.replay_all()
     self.assertEquals( None, sock._read_cb() )
+
+  def test_parent_read_timer_cb(self):
+    sock = EventSocket()
+    sock._pending_read_cb_event = 'foo'
+    sock._parent_read_cb = self.create_mock_anything()
+
+    sock._parent_read_cb( sock )
+
+    self.replay_all()
+    sock._parent_read_timer_cb()
+    self.assertEquals( 'error processing socket input buffer', sock._error_msg )
+    self.assertEquals( None, sock._pending_read_cb_event )
+
+  def test_parent_read_timer_cb_when_closed(self):
+    sock = EventSocket()
+    sock._pending_read_cb_event = 'foo'
+    sock._closed = True
+    sock._parent_read_cb = self.create_mock_anything()
+
+    sock._parent_read_timer_cb()
+    self.assertEquals( None, sock._error_msg )
+    self.assertEquals( 'foo', sock._pending_read_cb_event )
+
+  def test_parent_read_timer_cb_when_read_cb_reset(self):
+    sock = EventSocket()
+    sock._pending_read_cb_event = 'foo'
+    
+    sock._parent_read_timer_cb()
+    self.assertEquals( 'error processing socket input buffer', sock._error_msg )
+    self.assertEquals( None, sock._pending_read_cb_event )
+
+  def test_write_cb_with_no_data(self):
+    sock = EventSocket()
+    sock._sock = self.create_mock_anything()
+    sock._parent_output_empty_cb = self.create_mock_anything()
+    sock._debug = True
+    sock._logger = self.create_mock_anything()
+    self.mock( sock, '_flag_activity' )
+    sock._write_buf = deque()
+
+    self.assertEquals( None, sock._write_cb() )
+    self.assertEquals( sock._error_msg, "error writing socket output buffer" )
+
+  def test_write_cb_sends_all_data(self):
+    sock = EventSocket()
+    sock._sock = self.create_mock_anything()
+    sock._parent_output_empty_cb = self.create_mock_anything()
+    self.mock( sock, '_flag_activity' )
+    sock._write_buf = deque(['data1','data2'])
+
+    sock._sock.send( 'data1' ).AndReturn( 5 )
+    sock._sock.send( 'data2' ).AndReturn( 5 )
+    sock._flag_activity()
+    sock._parent_output_empty_cb( sock )
+
+    self.replay_all()
+    self.assertEquals( None, sock._write_cb() )
+    self.assertEquals( 0, len(sock._write_buf) )

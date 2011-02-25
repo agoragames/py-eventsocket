@@ -376,13 +376,20 @@ class EventSocket(object):
     """
     # Shouldn't need to check closed state because all events should be
     # cancelled, but there seems to be a case where that can happen so deal
-    # with it gracefully.  Possibly a bug in libevent when tons of events are
-    # in play as this only happened during extreme testing.
+    # with it gracefully. Possibly a bug or edge case in libevent when tons
+    # of events are in play as this only happened during extreme testing.
     if not self._closed:
       self._error_msg = "error processing socket input buffer"
-      self._pending_read_cb_event = None   # allow for __close_cb and __read_cb to do their thing.
-      self._parent_read_cb( self )
-    return None                           # never reschedule, let read do that.
+
+      # allow for __close_cb and __read_cb to do their thing.
+      self._pending_read_cb_event = None
+
+      # Catch edge case where this could have been cleared after _read_cb
+      if self._parent_read_cb:
+        self._parent_read_cb( self )
+
+    # never reschedule
+    return None
 
   def _write_cb(self):
     """
@@ -414,7 +421,7 @@ class EventSocket(object):
         # buffer any more data right now.
         if e.errno==errno.EAGAIN:
           if self._debug:
-            self._logger.debug( '"%s" raised, waiting to flush to %s'%( e, self._peername ) )
+            self._logger.debug( '"%s" raised, waiting to flush to %s', e, self._peername )
           break
         else:
           raise
@@ -433,7 +440,7 @@ class EventSocket(object):
     # also flag activity here?  might not be necessary, but in some cases the
     # timeout could still be small enough to trigger between accesses to the
     # socket output.
-    self._flag_activity()    
+    self._flag_activity()
     
     if len(self._write_buf)>0:
       return True
