@@ -1,6 +1,4 @@
 # Unit testing for the Event socket
-import unittest
-import mox
 import logging
 import io
 import random
@@ -13,15 +11,13 @@ from chai import Chai
 import eventsocket
 from eventsocket import EventSocket
 
-#class EventSocketTest(mox.MoxTestBase):
 class EventSocketTest(Chai):
   
   def setUp(self):
-    #mox.MoxTestBase.setUp(self)
     super(EventSocketTest,self).setUp()
 
     # mock all event callbacks
-    #self.mock( eventsocket, 'event' )
+    self.mock( eventsocket, 'event' )
 
   # TODO: Test initialization
 
@@ -169,7 +165,7 @@ class EventSocketTest(Chai):
     self.mock(sock, 'getsockname')
     
     self.expect(sock._sock.bind).args( 'arg1', 'arg2' )
-    self.expect(sock.getsockname.__call__).returns( ('foo',1234) )
+    self.expect(sock.getsockname).returns( ('foo',1234) )
     self.expect(eventsocket.event.read).args( sock, sock._protected_cb, sock._accept_cb )
 
     sock.bind( 'arg1', 'arg2' )
@@ -183,7 +179,7 @@ class EventSocketTest(Chai):
     
     self.expect(sock._logger.debug).args( "binding to %s", str(('arg1','arg2')) )
     self.expect(sock._sock.bind).args( 'arg1', 'arg2' )
-    self.expect(sock.getsockname.__call__).returns( ('foo',1234) )
+    self.expect(sock.getsockname).returns( ('foo',1234) )
     self.expect(eventsocket.event.read).args( sock, sock._protected_cb, sock._accept_cb ).returns('accept_event')
 
     sock.bind( 'arg1', 'arg2' )
@@ -222,7 +218,7 @@ class EventSocketTest(Chai):
     sock._parent_error_cb = self.mock()
     sock._error_msg = 'isanerror'
 
-    self.expect(sock._parent_error_cb.__call__).args( sock, 'isanerror', 'exception' )
+    self.expect(sock._parent_error_cb).args( sock, 'isanerror', 'exception' )
 
     sock._handle_error( 'exception' )
 
@@ -230,7 +226,7 @@ class EventSocketTest(Chai):
     sock = EventSocket()
     sock._parent_error_cb = self.mock()
 
-    self.expect(sock._parent_error_cb.__call__).args( sock, 'unknown error', 'exception' )
+    self.expect(sock._parent_error_cb).args( sock, 'unknown error', 'exception' )
 
     sock._handle_error( 'exception' )
 
@@ -263,20 +259,20 @@ class EventSocketTest(Chai):
     sock = EventSocket()
     cb = self.mock()
 
-    self.expect(cb.__call__).args( 'arg1', 'arg2', arg3='foo' ).returns( 'result' )
+    self.expect( cb ).args( 'arg1', 'arg2', arg3='foo' ).returns( 'result' )
 
     self.assertEquals( 'result', 
       sock._protected_cb( cb, 'arg1', 'arg2', arg3='foo' ) )
 
   def test_protected_cb_when_an_error(self):
     sock = EventSocket()
-    self.mock( sock, '_handle_error' )
+    #self.mock( sock, '_handle_error' )
     cb = self.mock()
     sock._error_msg = 'it broked'
 
     exc = RuntimeError('fale')
-    self.expect(cb.__call__).args( 'arg1', 'arg2', arg3='foo' ).raises( exc )
-    sock._handle_error( exc )
+    self.expect( cb ).args( 'arg1', 'arg2', arg3='foo' ).raises( exc )
+    self.expect( sock._handle_error ).args( exc )
 
     self.assertEquals( None,
       sock._protected_cb( cb, 'arg1', 'arg2', arg3='foo' ) )
@@ -325,7 +321,7 @@ class EventSocketTest(Chai):
     sock._sock = self.mock()
     self.mock( sock, 'getsockopt' )
     
-    self.expect( sock.getsockopt.__call__ ).args( socket.SOL_SOCKET, socket.SO_RCVBUF ).returns( 42 )
+    self.expect( sock.getsockopt ).args( socket.SOL_SOCKET, socket.SO_RCVBUF ).returns( 42 )
     self.expect( sock._sock.recv ).args( 42 ).returns( 'sumdata' )
     self.expect( sock._flag_activity )
     
@@ -342,7 +338,7 @@ class EventSocketTest(Chai):
     sock._parent_read_cb = 'p_read_cb'
     self.mock( sock, 'getsockopt' )
     
-    self.expect( sock.getsockopt.__call__ ).args( socket.SOL_SOCKET, socket.SO_RCVBUF ).returns( 42 )
+    self.expect( sock.getsockopt ).args( socket.SOL_SOCKET, socket.SO_RCVBUF ).returns( 42 )
     self.expect( sock._sock.recv ).args( 42 ).returns( 'sumdata' )
     self.expect( sock._logger.debug ).args( 'read 7 bytes from peername' )
     self.expect( sock._flag_activity )
@@ -361,7 +357,7 @@ class EventSocketTest(Chai):
     sock._pending_read_cb_event = 'pending_read'
     self.mock( sock, 'getsockopt' )
     
-    self.expect( sock.getsockopt.__call__ ).args( socket.SOL_SOCKET, socket.SO_RCVBUF ).returns( 42 )
+    self.expect( sock.getsockopt ).args( socket.SOL_SOCKET, socket.SO_RCVBUF ).returns( 42 )
     self.expect( sock._sock.recv ).args( 42 ).returns( 'sumdata' )
     self.expect( sock._flag_activity )
     
@@ -378,12 +374,12 @@ class EventSocketTest(Chai):
     self.mock( sock, 'getsockopt' )
     self.mock( sock, 'close' )
     
-    self.expect( sock.getsockopt.__call__ ).args( socket.SOL_SOCKET, socket.SO_RCVBUF ).returns( 42 )
+    self.expect( sock.getsockopt ).args( socket.SOL_SOCKET, socket.SO_RCVBUF ).returns( 42 )
     self.expect( sock._sock.recv ).args( 42 ).returns( 'sumdata' )
     self.expect( sock._logger.debug ).args( 'read 7 bytes from peername' )
     self.expect( sock._flag_activity )
     self.expect( sock._logger.debug ).args( 'buffer for peername overflowed!' )
-    self.expect( sock.close.__call__ )
+    self.expect( sock.close )
     
     self.assertEquals( None, sock._read_cb() )
     self.assertEquals( bytearray(), sock._read_buf )
@@ -394,20 +390,18 @@ class EventSocketTest(Chai):
     self.mock( sock, 'getsockopt' )
     self.mock( sock, 'close' )
     
-    self.expect( sock.getsockopt.__call__ ).args( socket.SOL_SOCKET, socket.SO_RCVBUF ).returns( 42 )
+    self.expect( sock.getsockopt ).args( socket.SOL_SOCKET, socket.SO_RCVBUF ).returns( 42 )
     self.expect( sock._sock.recv ).args( 42 ).returns( '' )
-    self.expect( sock.close.__call__ )
+    self.expect( sock.close )
     
     self.assertEquals( None, sock._read_cb() )
 
   def test_parent_read_timer_cb(self):
     sock = EventSocket()
     sock._pending_read_cb_event = 'foo'
-    sock._parent_read_cb = self.create_mock_anything()
+    sock._parent_read_cb = self.mock()
+    self.expect( sock._parent_read_cb ).args( sock )
 
-    sock._parent_read_cb( sock )
-
-    self.replay_all()
     sock._parent_read_timer_cb()
     self.assertEquals( 'error processing socket input buffer', sock._error_msg )
     self.assertEquals( None, sock._pending_read_cb_event )
@@ -416,7 +410,7 @@ class EventSocketTest(Chai):
     sock = EventSocket()
     sock._pending_read_cb_event = 'foo'
     sock._closed = True
-    sock._parent_read_cb = self.create_mock_anything()
+    sock._parent_read_cb = self.mock()
 
     sock._parent_read_timer_cb()
     self.assertEquals( None, sock._error_msg )
@@ -432,10 +426,10 @@ class EventSocketTest(Chai):
 
   def test_write_cb_with_no_data(self):
     sock = EventSocket()
-    sock._sock = self.create_mock_anything()
-    sock._parent_output_empty_cb = self.create_mock_anything()
+    sock._sock = self.mock()
+    sock._parent_output_empty_cb = self.mock()
     sock._debug = True
-    sock._logger = self.create_mock_anything()
+    sock._logger = self.mock()
     self.mock( sock, '_flag_activity' )
     sock._write_buf = deque()
 
@@ -444,16 +438,14 @@ class EventSocketTest(Chai):
 
   def test_write_cb_sends_all_data(self):
     sock = EventSocket()
-    sock._sock = self.create_mock_anything()
-    sock._parent_output_empty_cb = self.create_mock_anything()
-    self.mock( sock, '_flag_activity' )
+    sock._sock = self.mock()
+    sock._parent_output_empty_cb = self.mock()
     sock._write_buf = deque(['data1','data2'])
 
-    sock._sock.send( 'data1' ).AndReturn( 5 )
-    sock._sock.send( 'data2' ).AndReturn( 5 )
-    sock._flag_activity()
-    sock._parent_output_empty_cb( sock )
+    self.expect( sock._sock.send ).args( 'data1' ).returns( 5 )
+    self.expect( sock._sock.send ).args( 'data2' ).returns( 5 )
+    self.expect( sock._flag_activity )
+    self.expect( sock._parent_output_empty_cb ).args( sock )
 
-    self.replay_all()
     self.assertEquals( None, sock._write_cb() )
     self.assertEquals( 0, len(sock._write_buf) )
