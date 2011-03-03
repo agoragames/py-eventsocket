@@ -32,7 +32,7 @@ class EventSocketTest(Chai):
 
 #     self.mox.ReplayAll()
 
-#     self.assertTrue( self.sock._EventSocket__write_cb() )
+#     self.assert_true( self.sock._EventSocket__write_cb() )
 
   '''
   def test_write_cb_handles_errno_EAGAIN_when_debug_1(self):
@@ -54,49 +54,49 @@ class EventSocketTest(Chai):
 
     self.mox.ReplayAll()
 
-    self.assertTrue( self.sock._EventSocket__write_cb() )
+    self.assert_true( self.sock._EventSocket__write_cb() )
   '''
 
   def test_init_without_args(self):
     sock = EventSocket()
-    self.assertFalse( sock._debug )
-    self.assertEqual( None, sock._logger )
-    self.assertEqual( None, sock._read_event )
-    self.assertEqual( None, sock._write_event )
-    self.assertEqual( None, sock._accept_event )
-    self.assertEqual( None, sock._pending_read_cb_event )
-    self.assertEqual( 'unknown', sock._peername )
-    self.assertTrue( isinstance(sock._sock, socket.socket) )
-    self.assertEqual( sock.listen, sock._sock.listen )
-    self.assertEqual( sock.setsockopt, sock._sock.setsockopt )
-    self.assertEqual( sock.fileno, sock._sock.fileno )
-    self.assertEqual( sock.getpeername, sock._sock.getpeername )
-    self.assertEqual( sock.getsockname, sock._sock.getsockname )
-    self.assertEqual( sock.getsockopt, sock._sock.getsockopt )
-    self.assertEqual( sock.setblocking, sock._sock.setblocking )
-    self.assertEqual( sock.settimeout, sock._sock.settimeout )
-    self.assertEqual( sock.gettimeout, sock._sock.gettimeout )
-    self.assertEqual( 0, sock._max_read_buffer )
-    self.assertEqual( deque(), sock._write_buf )
-    self.assertEqual( bytearray(), sock._read_buf )
-    self.assertEqual( None, sock._parent_accept_cb )
-    self.assertEqual( None, sock._parent_read_cb )
-    self.assertEqual( None, sock._parent_error_cb )
-    self.assertEqual( None, sock._parent_close_cb )
-    self.assertEqual( None, sock._parent_output_empty_cb )
-    self.assertEqual( None, sock._error_msg )
-    self.assertFalse( sock._closed )
-    self.assertEqual( None, sock._inactive_event )
+    self.assert_false( sock._debug )
+    self.assert_equal( None, sock._logger )
+    self.assert_equal( None, sock._read_event )
+    self.assert_equal( None, sock._write_event )
+    self.assert_equal( None, sock._accept_event )
+    self.assert_equal( None, sock._pending_read_cb_event )
+    self.assert_equal( 'unknown', sock._peername )
+    self.assert_true( isinstance(sock._sock, socket.socket) )
+    self.assert_equal( sock.listen, sock._sock.listen )
+    self.assert_equal( sock.setsockopt, sock._sock.setsockopt )
+    self.assert_equal( sock.fileno, sock._sock.fileno )
+    self.assert_equal( sock.getpeername, sock._sock.getpeername )
+    self.assert_equal( sock.getsockname, sock._sock.getsockname )
+    self.assert_equal( sock.getsockopt, sock._sock.getsockopt )
+    self.assert_equal( sock.setblocking, sock._sock.setblocking )
+    self.assert_equal( sock.settimeout, sock._sock.settimeout )
+    self.assert_equal( sock.gettimeout, sock._sock.gettimeout )
+    self.assert_equal( 0, sock._max_read_buffer )
+    self.assert_equal( deque(), sock._write_buf )
+    self.assert_equal( bytearray(), sock._read_buf )
+    self.assert_equal( None, sock._parent_accept_cb )
+    self.assert_equal( None, sock._parent_read_cb )
+    self.assert_equal( None, sock._parent_error_cb )
+    self.assert_equal( None, sock._parent_close_cb )
+    self.assert_equal( None, sock._parent_output_empty_cb )
+    self.assert_equal( None, sock._error_msg )
+    self.assert_false( sock._closed )
+    self.assert_equal( None, sock._inactive_event )
 
     # TODO: mock instead that we're calling setinactivetimeout() ?
-    self.assertEqual( 0, sock._inactive_timeout )
+    self.assert_equal( 0, sock._inactive_timeout )
 
   # TODO: test with all possible args
 
   def test_closed_property(self):
     sock = EventSocket()
     sock._closed = 'yes'
-    self.assertEquals( 'yes', sock.closed )
+    self.assert_equals( 'yes', sock.closed )
 
   # TODO: test close which needs mocks
 
@@ -105,7 +105,7 @@ class EventSocketTest(Chai):
   def test_set_read_cb_when_no_reason_to_schedule_flush(self):
     sock = EventSocket()
     sock._set_read_cb( 'readit' )
-    self.assertEquals( 'readit', sock._parent_read_cb )
+    self.assert_equals( 'readit', sock._parent_read_cb )
 
   def test_set_read_cb_when_should_flush(self):
     sock = EventSocket()
@@ -116,8 +116,8 @@ class EventSocketTest(Chai):
     self.expect(eventsocket.event.timeout).args(0, sock._protected_cb, sock._parent_read_timer_cb).returns('timeout_event')
 
     sock._set_read_cb( 'parent_read_cb' )
-    self.assertEquals( 'parent_read_cb', sock._parent_read_cb )
-    self.assertEquals( 'timeout_event', sock._pending_read_cb_event )
+    self.assert_equals( 'parent_read_cb', sock._parent_read_cb )
+    self.assert_equals( 'timeout_event', sock._pending_read_cb_event )
 
   def test_set_read_cb_when_data_to_flush_but_pending_read_event(self):
     sock = EventSocket()
@@ -126,38 +126,38 @@ class EventSocketTest(Chai):
     sock._pending_read_cb_event = 'pending_event'
 
     sock._set_read_cb( 'parent_read_cb' )
-    self.assertEquals( 'parent_read_cb', sock._parent_read_cb )
-    self.assertEquals( 'pending_event', sock._pending_read_cb_event )
+    self.assert_equals( 'parent_read_cb', sock._parent_read_cb )
+    self.assert_equals( 'pending_event', sock._pending_read_cb_event )
 
   def test_read_cb_property(self):
     sock = EventSocket()
-    self.assertEquals( None, sock._parent_read_cb )
+    self.assert_equals( None, sock._parent_read_cb )
     sock.read_cb = 'read_cb'
-    self.assertEquals( 'read_cb', sock._parent_read_cb )
+    self.assert_equals( 'read_cb', sock._parent_read_cb )
 
   def test_accept_cb_property(self):
     sock = EventSocket()
-    self.assertEquals( None, sock._parent_accept_cb )
+    self.assert_equals( None, sock._parent_accept_cb )
     sock.accept_cb = 'accept_cb'
-    self.assertEquals( 'accept_cb', sock._parent_accept_cb )
+    self.assert_equals( 'accept_cb', sock._parent_accept_cb )
 
   def test_close_cb_property(self):
     sock = EventSocket()
-    self.assertEquals( None, sock._parent_close_cb )
+    self.assert_equals( None, sock._parent_close_cb )
     sock.close_cb = 'close_cb'
-    self.assertEquals( 'close_cb', sock._parent_close_cb )
+    self.assert_equals( 'close_cb', sock._parent_close_cb )
 
   def test_error_cb_property(self):
     sock = EventSocket()
-    self.assertEquals( None, sock._parent_error_cb )
+    self.assert_equals( None, sock._parent_error_cb )
     sock.error_cb = 'error_cb'
-    self.assertEquals( 'error_cb', sock._parent_error_cb )
+    self.assert_equals( 'error_cb', sock._parent_error_cb )
 
   def test_output_empty_cb_property(self):
     sock = EventSocket()
-    self.assertEquals( None, sock._parent_output_empty_cb )
+    self.assert_equals( None, sock._parent_output_empty_cb )
     sock.output_empty_cb = 'output_empty_cb'
-    self.assertEquals( 'output_empty_cb', sock._parent_output_empty_cb )
+    self.assert_equals( 'output_empty_cb', sock._parent_output_empty_cb )
 
   def test_bind_without_debugging(self):
     sock = EventSocket()
@@ -183,8 +183,8 @@ class EventSocketTest(Chai):
     self.expect(eventsocket.event.read).args( sock, sock._protected_cb, sock._accept_cb ).returns('accept_event')
 
     sock.bind( 'arg1', 'arg2' )
-    self.assertEquals( "foo:1234", sock._peername )
-    self.assertEquals( 'accept_event', sock._accept_event )
+    self.assert_equals( "foo:1234", sock._peername )
+    self.assert_equals( 'accept_event', sock._accept_event )
 
     # TODO: test connect after merging connect() and connect_blocking()
 
@@ -195,8 +195,8 @@ class EventSocketTest(Chai):
     self.expect( sock._inactive_event.delete )
     
     sock.set_inactive_timeout(0)
-    self.assertEquals( None, sock._inactive_event )
-    self.assertEquals( 0, sock._inactive_timeout )
+    self.assert_equals( None, sock._inactive_event )
+    self.assert_equals( 0, sock._inactive_timeout )
 
   def test_set_inactive_timeout_when_turning_off(self):
     sock = EventSocket()
@@ -206,12 +206,12 @@ class EventSocketTest(Chai):
     self.expect( eventsocket.event.timeout ).args( 32, sock._inactive_cb ).returns( 'new_timeout' )
 
     sock.set_inactive_timeout(32)
-    self.assertEquals( 'new_timeout', sock._inactive_event )
-    self.assertEquals( 32, sock._inactive_timeout )
+    self.assert_equals( 'new_timeout', sock._inactive_event )
+    self.assert_equals( 32, sock._inactive_timeout )
 
   def test_set_inactive_timeout_on_stupid_input(self):
     sock = EventSocket()
-    self.assertRaises( TypeError, sock.set_inactive_timeout, 'blah' )
+    self.assert_raises( TypeError, sock.set_inactive_timeout, 'blah' )
 
   def test_handle_error_with_handler_and_err_msg(self):
     sock = EventSocket()
@@ -261,7 +261,7 @@ class EventSocketTest(Chai):
 
     self.expect( cb ).args( 'arg1', 'arg2', arg3='foo' ).returns( 'result' )
 
-    self.assertEquals( 'result', 
+    self.assert_equals( 'result', 
       sock._protected_cb( cb, 'arg1', 'arg2', arg3='foo' ) )
 
   def test_protected_cb_when_an_error(self):
@@ -274,9 +274,9 @@ class EventSocketTest(Chai):
     self.expect( cb ).args( 'arg1', 'arg2', arg3='foo' ).raises( exc )
     self.expect( sock._handle_error ).args( exc )
 
-    self.assertEquals( None,
+    self.assert_equals( None,
       sock._protected_cb( cb, 'arg1', 'arg2', arg3='foo' ) )
-    self.assertEquals( None, sock._error_msg )
+    self.assert_equals( None, sock._error_msg )
 
   def test_accept_cb_when_no_logger_and_no_parent_cb(self):
     sock = EventSocket()
@@ -293,8 +293,8 @@ class EventSocketTest(Chai):
       close_cb='p_close_cb', sock='connection', debug=False,
       logger=None, max_read_buffer=42 )
 
-    self.assertTrue( sock._accept_cb() )
-    self.assertEquals( 'error accepting new socket', sock._error_msg )
+    self.assert_true( sock._accept_cb() )
+    self.assert_equals( 'error accepting new socket', sock._error_msg )
 
   def test_accept_cb_when_logger_and_parent_cb(self):
     sock = EventSocket()
@@ -314,7 +314,7 @@ class EventSocketTest(Chai):
       logger=sock._logger, max_read_buffer=42 )
     self.expect(sock._protected_cb).args( 'p_accept_cb', self.instance_of(EventSocket) )
 
-    self.assertTrue( sock._accept_cb() )
+    self.assert_true( sock._accept_cb() )
 
   def test_read_cb_simplest_case(self):
     sock = EventSocket()
@@ -325,9 +325,9 @@ class EventSocketTest(Chai):
     self.expect( sock._sock.recv ).args( 42 ).returns( 'sumdata' )
     self.expect( sock._flag_activity )
     
-    self.assertTrue( sock._read_cb() )
-    self.assertEquals( bytearray('sumdata'), sock._read_buf )
-    self.assertEquals( 'error reading from socket', sock._error_msg )
+    self.assert_true( sock._read_cb() )
+    self.assert_equals( bytearray('sumdata'), sock._read_buf )
+    self.assert_equals( 'error reading from socket', sock._error_msg )
 
   def test_read_cb_when_debugging_and_parent_cb_and_no_pending_event(self):
     sock = EventSocket()
@@ -344,9 +344,9 @@ class EventSocketTest(Chai):
     self.expect( sock._flag_activity )
     self.expect( eventsocket.event.timeout ).args( 0, sock._protected_cb, sock._parent_read_timer_cb ).returns('pending_read')
     
-    self.assertTrue( sock._read_cb() )
-    self.assertEquals( bytearray('sumdata'), sock._read_buf )
-    self.assertEquals( 'pending_read', sock._pending_read_cb_event )
+    self.assert_true( sock._read_cb() )
+    self.assert_equals( bytearray('sumdata'), sock._read_buf )
+    self.assert_equals( 'pending_read', sock._pending_read_cb_event )
   
   def test_read_cb_when_parent_cb_and_is_a_pending_event_and_already_buffered_data(self):
     sock = EventSocket()
@@ -361,8 +361,8 @@ class EventSocketTest(Chai):
     self.expect( sock._sock.recv ).args( 42 ).returns( 'sumdata' )
     self.expect( sock._flag_activity )
     
-    self.assertTrue( sock._read_cb() )
-    self.assertEquals( bytearray('foosumdata'), sock._read_buf )
+    self.assert_true( sock._read_cb() )
+    self.assert_equals( bytearray('foosumdata'), sock._read_buf )
 
   def test_read_cb_when_buffer_overflow(self):
     sock = EventSocket()
@@ -381,8 +381,8 @@ class EventSocketTest(Chai):
     self.expect( sock._logger.debug ).args( 'buffer for peername overflowed!' )
     self.expect( sock.close )
     
-    self.assertEquals( None, sock._read_cb() )
-    self.assertEquals( bytearray(), sock._read_buf )
+    self.assert_equals( None, sock._read_cb() )
+    self.assert_equals( bytearray(), sock._read_buf )
 
   def test_read_cb_when_no_data(self):
     sock = EventSocket()
@@ -394,7 +394,7 @@ class EventSocketTest(Chai):
     self.expect( sock._sock.recv ).args( 42 ).returns( '' )
     self.expect( sock.close )
     
-    self.assertEquals( None, sock._read_cb() )
+    self.assert_equals( None, sock._read_cb() )
 
   def test_parent_read_timer_cb(self):
     sock = EventSocket()
@@ -403,8 +403,8 @@ class EventSocketTest(Chai):
     self.expect( sock._parent_read_cb ).args( sock )
 
     sock._parent_read_timer_cb()
-    self.assertEquals( 'error processing socket input buffer', sock._error_msg )
-    self.assertEquals( None, sock._pending_read_cb_event )
+    self.assert_equals( 'error processing socket input buffer', sock._error_msg )
+    self.assert_equals( None, sock._pending_read_cb_event )
 
   def test_parent_read_timer_cb_when_closed(self):
     sock = EventSocket()
@@ -413,16 +413,16 @@ class EventSocketTest(Chai):
     sock._parent_read_cb = self.mock()
 
     sock._parent_read_timer_cb()
-    self.assertEquals( None, sock._error_msg )
-    self.assertEquals( 'foo', sock._pending_read_cb_event )
+    self.assert_equals( None, sock._error_msg )
+    self.assert_equals( 'foo', sock._pending_read_cb_event )
 
   def test_parent_read_timer_cb_when_read_cb_reset(self):
     sock = EventSocket()
     sock._pending_read_cb_event = 'foo'
     
     sock._parent_read_timer_cb()
-    self.assertEquals( 'error processing socket input buffer', sock._error_msg )
-    self.assertEquals( None, sock._pending_read_cb_event )
+    self.assert_equals( 'error processing socket input buffer', sock._error_msg )
+    self.assert_equals( None, sock._pending_read_cb_event )
 
   def test_write_cb_with_no_data(self):
     sock = EventSocket()
@@ -433,8 +433,8 @@ class EventSocketTest(Chai):
     self.mock( sock, '_flag_activity' )
     sock._write_buf = deque()
 
-    self.assertEquals( None, sock._write_cb() )
-    self.assertEquals( sock._error_msg, "error writing socket output buffer" )
+    self.assert_equals( None, sock._write_cb() )
+    self.assert_equals( sock._error_msg, "error writing socket output buffer" )
 
   def test_write_cb_sends_all_data(self):
     sock = EventSocket()
@@ -447,5 +447,5 @@ class EventSocketTest(Chai):
     self.expect( sock._flag_activity )
     self.expect( sock._parent_output_empty_cb ).args( sock )
 
-    self.assertEquals( None, sock._write_cb() )
-    self.assertEquals( 0, len(sock._write_buf) )
+    self.assert_equals( None, sock._write_cb() )
+    self.assert_equals( 0, len(sock._write_buf) )
