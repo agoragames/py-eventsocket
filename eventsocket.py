@@ -420,6 +420,7 @@ class EventSocket(object):
         # to be used only for nonblocking sockets and implies that it can't
         # buffer any more data right now.
         if e.errno==errno.EAGAIN:
+          self._write_buf.appendleft( cur )
           if self._debug:
             self._logger.debug( '"%s" raised, waiting to flush to %s', e, self._peername )
           break
@@ -435,7 +436,7 @@ class EventSocket(object):
         break
     
     if self._debug:
-      self._logger.debug( "wrote %d/%d bytes to %s"%(total_sent,total_len,self._peername) )
+      self._logger.debug( "wrote %d/%d bytes to %s", total_sent,total_len,self._peername )
       
     # also flag activity here?  might not be necessary, but in some cases the
     # timeout could still be small enough to trigger between accesses to the

@@ -436,7 +436,7 @@ class EventSocketTest(Chai):
     self.assert_equals( None, sock._write_cb() )
     self.assert_equals( sock._error_msg, "error writing socket output buffer" )
 
-  def test_write_cb_sends_all_data(self):
+  def test_write_cb_sends_all_data_and_theres_an_output_empty_cb(self):
     sock = EventSocket()
     sock._sock = self.mock()
     sock._parent_output_empty_cb = self.mock()
@@ -449,3 +449,64 @@ class EventSocketTest(Chai):
 
     self.assert_equals( None, sock._write_cb() )
     self.assert_equals( 0, len(sock._write_buf) )
+
+  def test_write_cb_when_not_all_data_sent(self):
+    sock = EventSocket()
+    sock._sock = self.mock()
+    sock._parent_output_empty_cb = self.mock()  # assert not called
+    sock._write_buf = deque(['data1','data2'])
+
+    self.expect( sock._sock.send ).args( 'data1' ).returns( 5 )
+    self.expect( sock._sock.send ).args( 'data2' ).returns( 2 )
+    self.expect( sock._flag_activity )
+
+    self.assert_true( sock._write_cb() )
+    self.assert_equals( deque(['ta2']), sock._write_buf )
+
+  def test_write_cb_when_not_all_data_sent_and_logging(self):
+    sock = EventSocket()
+    sock._sock = self.mock()
+    sock._peername = 'peer'
+    sock._logger = self.mock()
+    sock._debug = True
+    sock._parent_output_empty_cb = self.mock()  # assert not called
+    sock._write_buf = deque(['data1','data2'])
+
+    self.expect( sock._sock.send ).args( 'data1' ).returns( 5 )
+    self.expect( sock._sock.send ).args( 'data2' ).returns( 2 )
+    self.expect( sock._logger.debug ).args( str, 7, 10, 'peer' )
+    self.expect( sock._flag_activity )
+
+    self.assert_true( sock._write_cb() )
+    self.assert_equals( deque(['ta2']), sock._write_buf )
+
+  def test_write_cb_when_eagain_raised(self):
+    sock = EventSocket()
+    sock._sock = self.mock()
+    sock._parent_output_empty_cb = self.mock()  # assert not called
+    sock._write_buf = deque(['data1','data2'])
+
+    self.expect( sock._sock.send ).args( 'data1' ).raises(
+      EnvironmentError(errno.EAGAIN,'try again') )
+    self.expect( sock._flag_activity )
+
+    self.assert_true( sock._write_cb() )
+    self.assert_equals( deque(['data1','data2']), sock._write_buf )
+
+  def test_write_cb_when_eagain_raised_and_logging(self):
+    sock = EventSocket()
+    sock._sock = self.mock()
+    sock._peername = 'peer'
+    sock._logger = self.mock()
+    sock._debug = True
+    sock._parent_output_empty_cb = self.mock()  # assert not called
+    sock._write_buf = deque(['data1','data2'])
+
+    self.expect( sock._sock.send ).args( 'data1' ).raises(
+      EnvironmentError(errno.EAGAIN,'try again') )
+    self.expect( sock._logger.debug ).args( str, EnvironmentError, 'peer' )
+    self.expect( sock._logger.debug ).args( str, 0, 10, 'peer' )
+    self.expect( sock._flag_activity )
+
+    self.assert_true( sock._write_cb() )
+    self.assert_equals( deque(['data1','data2']), sock._write_buf )
