@@ -484,8 +484,8 @@ class EventSocket(object):
       self._write_event.add()
   
     if self._debug > 1:
-      self._logger.debug("buffered %d bytes (%d total) to %s"%\
-        (len(data), sum(map(len,self._write_buf)), self._peername) )
+      self._logger.debug("buffered %d bytes (%d total) to %s",
+        len(data), sum(map(len,self._write_buf)), self._peername )
 
     # Flag activity here so we don't timeout in case that event is ready to
     # fire and we're just now writing.
@@ -499,7 +499,6 @@ class EventSocket(object):
       raise socket.error('read error: socket is closed')
 
     rval = self._read_buf
-    #rval.seek(0, 0)
     self._read_buf = bytearray()
     return rval
 

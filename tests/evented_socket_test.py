@@ -510,3 +510,89 @@ class EventSocketTest(Chai):
 
     self.assert_true( sock._write_cb() )
     self.assert_equals( deque(['data1','data2']), sock._write_buf )
+
+  def test_write_cb_when_other_environment_error_raised(self):
+    sock = EventSocket()
+    sock._sock = self.mock()
+    sock._peername = 'peer'
+    sock._logger = self.mock()
+    sock._debug = True
+    sock._parent_output_empty_cb = self.mock()  # assert not called
+    sock._write_buf = deque(['data1','data2'])
+
+    self.expect( sock._sock.send ).args( 'data1' ).raises(
+      EnvironmentError(errno.ECONNABORTED,'try again') )
+
+    self.assert_raises( EnvironmentError, sock._write_cb )
+
+  def test_inactive_cb(self):
+    sock = EventSocket()
+    self.expect( sock.close )
+    sock._inactive_cb()
+    self.assert_equals( "error closing inactive socket", sock._error_msg )
+
+  def test_flag_activity(self):
+    sock = EventSocket()
+    sock._inactive_event = self.mock()
+    sock._inactive_timeout = 42
+    
+    self.expect( sock._inactive_event.delete )
+    self.expect( eventsocket.event.timeout ).args( 42, sock._protected_cb, sock._inactive_cb ).returns( 'doitagain' )
+
+    sock._flag_activity()
+    self.assert_equals( 'doitagain', sock._inactive_event )
+
+  def test_write_when_closed(self):
+    sock = EventSocket()
+    sock._closed = True
+
+    self.assert_raises( socket.error, sock.read )
+
+  def test_write_when_write_event_and_not_pending(self):
+    sock = EventSocket()
+    sock._write_event = self.mock()
+    
+    self.expect( sock._write_event.pending ).returns( False )
+    self.expect( sock._write_event.add )
+    self.expect( sock._flag_activity )
+
+    sock.write( 'foo' )
+    self.assert_equals( deque(['foo']), sock._write_buf )
+
+  def test_write_when_write_event_is_pending_and_debugging(self):
+    sock = EventSocket()
+    sock._write_event = self.mock()
+    sock._peername = 'peername'
+    sock._write_buf = deque(['data'])
+    sock._debug = 2
+    sock._logger = self.mock()
+    
+    self.expect( sock._write_event.pending ).returns( True )
+    self.expect( sock._logger.debug ).args(str, 3, 7, 'peername')
+    self.expect( sock._flag_activity )
+
+    sock.write( 'foo' )
+    self.assert_equals( deque(['data', 'foo']), sock._write_buf )
+
+  def test_read_when_closed(self):
+    sock = EventSocket()
+    sock._closed = True
+
+    self.assert_raises( socket.error, sock.read )
+
+  def test_read(self):
+    sock = EventSocket()
+    sock._read_buf = bytearray('datas')
+    self.assert_equals( bytearray('datas'), sock.read() )
+    self.assert_equals( bytearray(), sock._read_buf )
+
+  def test_buffer_when_bytearray(self):
+    sock = EventSocket()
+    sock.buffer( bytearray('foo') )
+    self.assert_equals( bytearray('foo'), sock._read_buf )
+
+  def test_buffer_when_string(self):
+    sock = EventSocket()
+    sock._read_buf = bytearray('data')
+    sock.buffer( 'foo' )
+    self.assert_equals( bytearray('datafoo'), sock._read_buf )
