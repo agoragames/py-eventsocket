@@ -22,7 +22,7 @@ setup(
     py_modules = ['eventsocket'],
     install_requires = requirements,
     license="MIT License",
-    long_description=open('README.txt').read(),
+    long_description=open('README.rst').read(),
     keywords=['socket', 'evented'],
     classifiers=[
         'Development Status :: 4 - Beta',
