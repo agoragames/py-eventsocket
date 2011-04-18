@@ -80,6 +80,7 @@ class EventSocket(object):
     self.setblocking = self._sock.setblocking  # is this correct?
     self.settimeout = self._sock.settimeout
     self.gettimeout = self._sock.gettimeout
+    self.shutdown = self._sock.shutdown
 
     self._max_read_buffer = max_read_buffer
     #self._write_buf = []

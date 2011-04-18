@@ -38,6 +38,7 @@ class EventSocketTest(Chai):
     assert_equal( sock.setblocking, sock._sock.setblocking )
     assert_equal( sock.settimeout, sock._sock.settimeout )
     assert_equal( sock.gettimeout, sock._sock.gettimeout )
+    assert_equal( sock.shutdown, sock._sock.shutdown )
     assert_equal( 0, sock._max_read_buffer )
     assert_equal( deque(), sock._write_buf )
     assert_equal( bytearray(), sock._read_buf )
