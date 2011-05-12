@@ -1,15 +1,5 @@
 import os
-
-try:
-    from setuptools import setup, find_packages, Command
-    from setuptools.command.test import test
-    from setuptools.command.install import install
-except ImportError:
-    from ez_setup import use_setuptools
-    use_setuptools()
-    from setuptools import setup, find_packages, Command
-    from setuptools.command.test import test
-    from setuptools.command.install import install
+from distutils.core import setup
 
 requirements = map(str.strip, open('requirements.txt').readlines())
 
@@ -18,15 +8,16 @@ setup(
     version='0.1.4',
     author="Aaron Westendorf",
     author_email="aaron@agoragames.com",
-    packages = find_packages() ,
-    py_modules = ['eventsocket'],
+    packages = ['eventsocket'],
+    url='https://github.com/agoragames/py-eventsocket',
+    license='LICENSE.txt',
+    description='Easy to use TCP socket based on libevent',
     install_requires = requirements,
-    license="MIT License",
     long_description=open('README.rst').read(),
-    keywords=['socket', 'evented'],
+    keywords=['socket', 'event'],
     classifiers=[
         'Development Status :: 4 - Beta',
-        'License :: OSI Approved :: MIT License',
+        'License :: OSI Approved :: BSD License',
         "Intended Audience :: Developers",
         "Operating System :: POSIX",
         "Topic :: Communications",
