@@ -42,7 +42,7 @@ to our issue tracker at https://github.com/agoragames/py-eventsocket/issues
 License
 =======
 
-This software is licensed under the `New BSD License`. See the ``LICENSE``
+This software is licensed under the `New BSD License`. See the ``LICENSE.txt``
 file in the top distribution directory for the full license text.
 
 .. # vim: syntax=rst expandtab tabstop=4 shiftwidth=4 shiftround
