@@ -33,6 +33,17 @@ To install using ``pip``,::
 
     $ pip install py-eventsocket
 
+If installing from source:
+
+* with development requirements (e.g. testing frameworks) ::
+
+    pip install -r development.txt
+
+* without development requirements ::
+
+    pip install -r requirements.txt
+
+
 Bug tracker
 ===========
 
