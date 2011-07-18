@@ -275,7 +275,7 @@ class EventSocketTest(Chai):
     expect(EventSocket.__init__).args( read_cb='p_read_cb', error_cb='p_error_cb',
       close_cb='p_close_cb', sock='connection', debug=True,
       logger=sock._logger, max_read_buffer=42 )
-    expect(sock._protected_cb).args( 'p_accept_cb', instance_of(EventSocket) )
+    expect(sock._protected_cb).args( 'p_accept_cb', is_a(EventSocket) )
 
     assert_true( sock._accept_cb() )
 
