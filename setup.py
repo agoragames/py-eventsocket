@@ -5,7 +5,7 @@ requirements = map(str.strip, open('requirements.txt').readlines())
 
 setup(
     name='py_eventsocket',
-    version='0.1.4',
+    version='0.1.5',
     author="Aaron Westendorf",
     author_email="aaron@agoragames.com",
     url='https://github.com/agoragames/py-eventsocket',
