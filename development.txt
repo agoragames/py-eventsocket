@@ -1,5 +1,4 @@
 -r requirements.txt
 
-# currently forced to use this as 0.1.15 broke property accessors on mock objects
-chai==0.1.14
+chai==0.1.16
 unittest2
