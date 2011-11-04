@@ -1,0 +1,6 @@
+0.1.5
+=====
+
+First changelog
+
+Added support for non-blocking connection, with timeouts. See documentation.
