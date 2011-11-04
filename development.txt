@@ -1,4 +1,4 @@
 -r requirements.txt
 
-chai==0.1.16
+chai==0.1.17
 unittest2

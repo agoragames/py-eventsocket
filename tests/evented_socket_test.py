@@ -5,6 +5,7 @@ import random
 import socket
 import os
 import errno
+import time
 from collections import deque
 from chai import Chai
 
@@ -26,6 +27,7 @@ class EventSocketTest(Chai):
     assert_equal( None, sock._read_event )
     assert_equal( None, sock._write_event )
     assert_equal( None, sock._accept_event )
+    assert_equal( None, sock._connect_event )
     assert_equal( None, sock._pending_read_cb_event )
     assert_equal( 'unknown', sock._peername )
     assert_true( isinstance(sock._sock, socket.socket) )
@@ -150,6 +152,105 @@ class EventSocketTest(Chai):
     assert_equals( 'accept_event', sock._accept_event )
 
     # TODO: test connect after merging connect() and connect_blocking()
+  def test_connect_sets_timeoutat_from_kwargs(self):
+    now = time.time()
+    sock = EventSocket()
+    expect( time, 'time' ).returns( now )
+    expect( sock._connect_cb ).args( now+5.3, ('localhost',5309), immediate_raise=True )
+    sock.connect( ('localhost',5309), timeout=5.3 )
+
+    expect( sock._connect_cb ).args( now+5.7, ('localhost',5309), immediate_raise=True )
+    sock.connect( ('localhost',5309), timeout_at=now+5.7 )
+
+  def test_connect_sets_default_timeout_from_socket(self):
+    now = time.time()
+    sock = EventSocket()
+    expect( time, 'time' ).returns( now )
+    sock._sock.settimeout( 8.67 )
+    expect( sock._connect_cb ).args( now+8.67, ('localhost',5309), immediate_raise=True )
+    sock.connect( ('localhost',5309) )
+
+  def test_connect_cb_when_no_err(self):
+    sock = EventSocket()
+    mock( sock, '_sock' )
+    expect( sock._sock.connect_ex ).args( ('.com', 1234) )
+    expect( sock._sock.getpeername ).returns( ('.com', 1234) )
+    expect( eventsocket.event.read ).args( sock._sock, sock._protected_cb, sock._read_cb ).returns( 'readev' )
+    expect( eventsocket.event.write ).args( sock._sock, sock._protected_cb, sock._write_cb ).returns( 'writeev' )
+    
+    sock._connect_cb( 3.14, ('.com',1234) )
+    assert_equals( '.com:1234', sock._peername )
+    assert_equals( 'readev', sock._read_event )
+    assert_equals( 'writeev', sock._write_event )
+    assert_equals( None, sock._connect_event )
+
+  def test_connect_cb_when_no_err_and_pending_connect_event(self):
+    sock = EventSocket()
+    mock( sock, '_sock' )
+    mock( sock, '_connect_event' )
+    expect( sock._sock.connect_ex ).args( ('.com', 1234) )
+    expect( sock._sock.getpeername ).returns( ('.com', 1234) )
+    expect( eventsocket.event.read ).any_args()
+    expect( eventsocket.event.write ).any_args()
+    expect( sock._connect_event.delete )
+    
+    sock._connect_cb( 3.14, ('.com',1234) )
+    assert_equals( None, sock._connect_event )
+
+  def test_connect_cb_when_einprogress_and_notimeout_and_no_pending_connect(self):
+    sock = EventSocket()
+    mock( sock, '_sock' )
+    
+    timeout_at = time.time()+3
+    expect( sock._sock.connect_ex ).args( ('.com', 1234) ).returns( errno.EINPROGRESS )
+    expect( eventsocket.event.timeout ).args( 0.1, sock._connect_cb, timeout_at, ('.com', 1234) ).returns( 'connectev' )
+
+    sock._connect_cb( timeout_at, ('.com',1234) )
+    assert_equals( 'connectev', sock._connect_event )
+
+  def test_connect_cb_when_einprogress_and_notimeout_and_pending_connect(self):
+    sock = EventSocket()
+    mock( sock, '_sock' )
+    mock( sock, '_connect_event' )
+    
+    timeout_at = time.time()+3
+    expect( sock._sock.connect_ex ).args( ('.com', 1234) ).returns( errno.EINPROGRESS )
+    expect( sock._connect_event.delete )
+    expect( eventsocket.event.timeout ).args( 0.1, sock._connect_cb, timeout_at, ('.com', 1234) ).returns( 'connectev' )
+
+    sock._connect_cb( timeout_at, ('.com',1234) )
+    assert_equals( 'connectev', sock._connect_event )
+
+  def test_connect_cb_when_ealready_and_timeout(self):
+    sock = EventSocket()
+    mock( sock, '_sock' )
+    mock( sock, '_connect_event' ) # assert delete() not called
+
+    timeout_at = time.time()-3
+    expect( sock._sock.connect_ex ).args( ('.com', 1234) ).returns( errno.EALREADY )
+    expect( sock.close )
+
+    sock._connect_cb( timeout_at, ('.com',1234) )
+
+  def test_connect_cb_when_fail_and_immediateraise(self):
+    sock = EventSocket()
+    mock( sock, '_sock' )
+    mock( sock, '_connect_event' )
+    
+    expect( sock._sock.connect_ex ).args( ('.com', 1234) ).returns( errno.ECONNREFUSED )
+    expect( sock._connect_event.delete )
+    assert_raises( socket.error, sock._connect_cb, time.time(), ('.com',1234), immediate_raise=True )
+  
+  def test_connect_cb_when_fail_and_not_immediateraise(self):
+    sock = EventSocket()
+    mock( sock, '_sock' )
+    mock( sock, '_connect_event' )
+    
+    expect( sock._sock.connect_ex ).args( ('.com', 1234) ).returns( errno.ECONNREFUSED )
+    expect( sock._connect_event.delete )
+    expect( sock._handle_error ).args( socket.error )
+
+    sock._connect_cb( time.time(), ('.com',1234) )
 
   def test_set_inactive_timeout_when_turning_off(self):
     sock = EventSocket()

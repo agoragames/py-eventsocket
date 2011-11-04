@@ -252,7 +252,7 @@ class EventSocket(object):
     err = self._sock.connect_ex( *args )
 
     if not err:
-      self._peername = "%s:%d"%self.getpeername()
+      self._peername = "%s:%d"%self._sock.getpeername()
       self._read_event = event.read( self._sock, self._protected_cb, self._read_cb )
       self._write_event = event.write( self._sock, self._protected_cb, self._write_cb )
       
@@ -266,6 +266,7 @@ class EventSocket(object):
       if isinstance(timeout_at,float) and time.time()>timeout_at:
         self._error_msg = 'timeout connecting to %s'%str(args)
         self.close()
+        return
       
       if self._connect_event:
         self._connect_event.delete()
@@ -275,6 +276,9 @@ class EventSocket(object):
       self._connect_event = event.timeout(0.1, self._connect_cb, 
         timeout_at, *args)
     else:
+      if self._connect_event:
+        self._connect_event.delete()
+
       self._error_msg = os.strerror(err)
       serr = socket.error( err, self._error_msg )
 
